@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>播客分析代理</title>
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css">
+    <style>
+        .container { max-width: 800px; margin-top: 50px; }
+        #result { display: none; margin-top: 30px; }
+        .loading { display: none; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="mb-4">播客内容分析系统</h1>
+        <form id="podcastForm">
+            <div class="input-group mb-3">
+                <input type="url" class="form-control"
+                       placeholder="输入播客音频URL"
+                       required
+                       id="podcastUrl">
+                <button class="btn btn-primary" type="submit">分析内容</button>
+            </div>
+        </form>
+
+        <div class="loading text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">加载中...</span>
+            </div>
+            <p class="mt-2">正在分析中，请稍候...</p>
+        </div>
+
+        <div id="result" class="card">
+            <div class="card-body">
+                <h5 class="card-title">分析结果</h5>
+                <div class="mb-3">
+                    <label class="form-label">内容摘要：</label>
+                    <p id="summary" class="form-control-plaintext"></p>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">完整转录：</label>
+                    <pre id="transcript" class="bg-light p-3 rounded"></pre>
+                </div>
+                <div class="alert alert-success" role="alert">
+                    状态：<span id="status"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('podcastForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const form = e.target;
+            const urlInput = document.getElementById('podcastUrl');
+            const resultDiv = document.getElementById('result');
+            const loading = document.querySelector('.loading');
+
+            form.querySelector('button').disabled = true;
+            loading.style.display = 'block';
+            resultDiv.style.display = 'none';
+
+            try {
+                const response = await fetch('/process/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        url: urlInput.value
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    document.getElementById('summary').textContent = data.data.summary;
+                    document.getElementById('transcript').textContent = data.data.transcript;
+                    document.getElementById('status').textContent = data.data.status;
+                    resultDiv.style.display = 'block';
+                } else {
+                    alert('处理失败: ' + data.message);
+                }
+            } catch (error) {
+                alert('请求出错: ' + error.message);
+            } finally {
+                form.querySelector('button').disabled = false;
+                loading.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

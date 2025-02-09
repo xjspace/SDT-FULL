@@ -1,0 +1,20 @@
+[project]
+name = "smolagents"
+version = "0.1.0"
+description = "轻量级播客处理代理系统"
+requires-python = ">=3.9"
+dependencies = [
+    "aiohttp>=3.9.3",
+    "whisper-ctranslate2>=3.0.0",
+    "ffmpeg-python>=0.2.0",
+    "pydub>=0.25.1",
+    "python-dotenv>=1.0.0"
+]
+
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"

@@ -1,0 +1,36 @@
+# 模型路径配置
+model_paths:
+  vosk: "models/vosk"  # Vosk语音识别模型路径
+  summarization: "facebook/bart-large-cnn"  # 摘要模型
+  sentiment: "distilbert-base-uncased-finetuned-sst-2-english"  # 情感分析模型
+
+# 存储配置
+storage:
+  output_dir: "processed_data"  # 处理结果输出目录
+  max_retention_days: 30  # 最大保留天数
+
+# 处理参数配置
+processing:
+  summary_max_length: 150  # 摘要最大长度
+  summary_min_length: 30   # 摘要最小长度
+  min_audio_duration: 300  # 最小处理时长（秒）
+  max_audio_duration: 3600 # 最大处理时长（秒）
+
+# 订阅源配置
+feeds:
+  - name: "科技聚焦"
+    url: "https://example.com/tech-podcast.rss"
+    category: "technology"
+    enabled: true
+
+  - name: "商业洞察"
+    url: "https://example.com/business-podcast.rss"
+    category: "business"
+    enabled: true
+
+# 日志配置
+logging:
+  level: "INFO"
+  file: "podcast_agent.log"
+  max_size: 10485760  # 10MB
+  backup_count: 5
