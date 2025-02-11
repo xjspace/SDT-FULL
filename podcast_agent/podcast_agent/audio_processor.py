@@ -1,92 +1,70 @@
-import requests
-import json
 import logging
+import librosa
+import numpy as np
+from typing import Tuple, Optional, Dict
 from pathlib import Path
-from typing import Optional
-from vosk import Model, KaldiRecognizer
-from transformers import pipeline
+from .schemas import ProcessingResult
 
-logger = logging.getLogger(__name__)
+# 配置音频处理日志
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("podcast_processor")
 
-class AudioProcessor:
-    def __init__(self, config: dict):
-        self.config = config
-        self._init_models()
+def denoise_audio(y: np.ndarray, sr: int) -> np.ndarray:
+    """使用谱减法进行音频降噪"""
+    stft = librosa.stft(y)
+    magnitude = np.abs(stft)
+    noise_profile = np.median(magnitude, axis=1, keepdims=True)
+    denoised_magnitude = np.maximum(magnitude - noise_profile, 0)
+    return librosa.istft(denoised_magnitude * np.exp(1j * np.angle(stft)))
 
-    def _init_models(self):
-        """初始化语音处理模型"""
-        # 加载Vosk语音识别模型
-        self.vosk_model = Model(self.config['model_paths']['vosk'])
+async def load_audio(file_path: Path, max_duration: int = 3600) -> Tuple[np.ndarray, int]:
+    """异步加载并预处理音频文件"""
+    try:
+        y, sr = librosa.load(file_path, sr=None, duration=max_duration)
 
-        # 加载Hugging Face文本处理模型
-        self.summarizer = pipeline(
-            "summarization",
-            model=self.config['model_paths']['summarization']
+        # 自动检测音频格式并转换
+        if y.ndim > 1:
+            y = librosa.to_mono(y)
+        if sr != 16000:
+            y = librosa.resample(y, orig_sr=sr, target_sr=16000)
+            sr = 16000
+
+        y = denoise_audio(y, sr)
+        return y, sr
+    except Exception as e:
+        logger.error(f"Error loading audio: {str(e)}")
+        raise RuntimeError(f"Audio processing failed: {str(e)}")
+
+def segment_audio(y: np.ndarray, sr: int, segment_length: int = 300) -> list:
+    """将长音频分段处理"""
+    samples_per_segment = segment_length * sr
+    return [y[i:i+samples_per_segment] for i in range(0, len(y), samples_per_segment)]
+
+def extract_features(y: np.ndarray, sr: int) -> Dict[str, float]:
+    """提取音频特征用于质量评估"""
+    return {
+        "snr": float(np.mean(y**2) / (np.var(y) + 1e-6)),
+        "silence_ratio": float(np.mean(np.abs(y) < 0.01)),
+        "spectral_centroid": float(np.mean(librosa.feature.spectral_centroid(y=y, sr=sr))),
+        "rms_energy": float(np.mean(librosa.feature.rms(y=y)))
+    }
+
+async def analyze_audio_quality(file_path: Path) -> Dict[str, float]:
+    """全面评估音频质量"""
+    try:
+        y, sr = await load_audio(file_path)
+        features = extract_features(y, sr)
+
+        # 添加基于经验的权重计算
+        quality_score = (
+            0.4 * (1 - features["silence_ratio"]) +
+            0.3 * np.log(features["snr"] + 1) +
+            0.2 * (features["spectral_centroid"] / 5000) +
+            0.1 * features["rms_energy"]
         )
 
-        self.sentiment_analyzer = pipeline(
-            "sentiment-analysis",
-            model=self.config['model_paths']['sentiment']
-        )
-
-    def download_audio(self, url: str, save_path: Path) -> bool:
-        """下载音频文件"""
-        try:
-            response = requests.get(url, stream=True, timeout=30)
-            response.raise_for_status()
-
-            with open(save_path, 'wb') as f:
-                for chunk in response.iter_content(chunk_size=8192):
-                    f.write(chunk)
-
-            logger.info(f"音频下载成功: {save_path.name}")
-            return True
-
-        except Exception as e:
-            logger.error(f"音频下载失败: {str(e)}")
-            return False
-
-    def transcribe_audio(self, audio_path: Path) -> Optional[str]:
-        """语音转写为文本"""
-        try:
-            recognizer = KaldiRecognizer(self.vosk_model, 16000)
-
-            with open(audio_path, 'rb') as f:
-                data = f.read(4096)
-                while data:
-                    recognizer.AcceptWaveform(data)
-                    data = f.read(4096)
-
-            result = json.loads(recognizer.FinalResult())
-            return result['text']
-
-        except Exception as e:
-            logger.error(f"语音转写失败: {str(e)}")
-            return None
-
-    def process_text(self, text: str) -> dict:
-        """文本处理流水线"""
-        processed = {
-            'summary': self._summarize_text(text),
-            'sentiment': self._analyze_sentiment(text),
-            'key_points': self._extract_key_points(text)
-        }
-        return processed
-
-    def _summarize_text(self, text: str) -> str:
-        """生成文本摘要"""
-        return self.summarizer(
-            text,
-            max_length=self.config['processing']['summary_max_length'],
-            min_length=self.config['processing']['summary_min_length'],
-            do_sample=False
-        )[0]['summary_text']
-
-    def _analyze_sentiment(self, text: str) -> dict:
-        """情感分析"""
-        return self.sentiment_analyzer(text)[0]
-
-    def _extract_key_points(self, text: str) -> list:
-        """提取关键点（示例实现）"""
-        # 实际应根据需求实现更复杂的逻辑
-        return [sentence.strip() for sentence in text.split('.')[:3] if sentence]
+        features["quality_score"] = float(quality_score)
+        return features
+    except Exception as e:
+        logger.error(f"Quality analysis failed: {str(e)}")
+        raise

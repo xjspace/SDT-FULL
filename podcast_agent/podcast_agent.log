@@ -1,0 +1,8 @@
+2025-02-10 15:44:58,343 - ERROR - 初始化失败: 'Vad' object has no attribute 'set_sample_rate'
+2025-02-10 23:38:54,066 - WARNING - WebRTC VAD强制设置采样率为16000Hz
+2025-02-10 23:38:54,066 - INFO - 系统平台: Windows 10
+2025-02-10 23:38:54,066 - INFO - 音频配置: {'sample_rate': 16000, 'channels': 1, 'dtype': 'float32', 'chunk_duration': 0.5, 'vad_threshold': 0.75, 'asr_model': 'base', 'language': 'zh', 'translate': False, 'output_format': 'mp3', 'bitrate': '192k', 'normalize': True}
+2025-02-10 23:38:54,694 - INFO - 成功加载语音识别模型: base
+2025-02-10 23:38:54,694 - INFO - 检测到13个音频设备
+2025-02-10 23:38:54,694 - ERROR - 未找到符合要求的音频输入设备
+2025-02-10 23:38:54,694 - ERROR - 音频设备初始化失败: 无可用音频输入设备
