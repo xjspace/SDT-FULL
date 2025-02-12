@@ -3,7 +3,13 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import asyncio
-from core.processing import process_podcast_url
+import sys
+import os
+import os
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from podcast_agent.core.processing import process_podcast_url
 
 app = FastAPI()
 

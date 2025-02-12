@@ -1,21 +1,28 @@
-[project]
+[tool.poetry]
 name = "smolagents"
 version = "0.1.0"
 description = "轻量级播客处理代理系统"
-requires-python = ">=3.9"
-dependencies = [
-    "aiohttp>=3.9.3",
-    "ffmpeg-python>=0.2.0",
-    "pydub>=0.25.1",
-    "python-dotenv>=1.0.0",
-    "speechrecognition (>=3.14.1,<4.0.0)",
-    "pyaudio (>=0.2.14,<0.3.0)",
-    "webrtcvad (>=2.0.10,<3.0.0)"
+authors = ["Your Name <your.email@example.com>"]
+readme = "README.md"
+packages = [
+    { include = "smolagents", from = "src" },
+    { include = "podcast_agent", from = "." },
+    { include = "core", from = "." }
 ]
 
+[tool.poetry.dependencies]
+python = ">=3.9"
+aiohttp = ">=3.9.3"
+ffmpeg-python = ">=0.2.0"
+pydub = ">=0.25.1"
+python-dotenv = ">=1.0.0"
+speechrecognition = ">=3.14.1,<4.0.0"
+pyaudio = ">=0.2.14,<0.3.0"
+webrtcvad = ">=2.0.10,<3.0.0"
+
 [build-system]
-requires = ["setuptools>=42", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
