@@ -1,9 +1,0 @@
-README.md
-pyproject.toml
-src/api/podcast_api.py
-src/services/podcast_agent/__init__.py
-src/smolagents.egg-info/PKG-INFO
-src/smolagents.egg-info/SOURCES.txt
-src/smolagents.egg-info/dependency_links.txt
-src/smolagents.egg-info/requires.txt
-src/smolagents.egg-info/top_level.txt
